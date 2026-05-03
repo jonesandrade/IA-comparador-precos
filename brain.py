@@ -8,13 +8,12 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def analisar_melhor_opcao(lista_produtos):
-    # Alterado para 'gemini-1.5-pro', que possui maior compatibilidade em diferentes regiões
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    # 'gemini-pro' é o nome mais estável e universal para evitar o erro 404
+    model = genai.GenerativeModel('gemini-pro')
     
     prompt = f"""
-    Atue como um analista de compras brasileiro. Analise os produtos abaixo e escolha o melhor custo-benefício.
-    Retorne APENAS um objeto JSON puro, sem blocos de código ou explicações.
-    Campos obrigatórios: "nome", "preco", "link" e "motivo".
+    Atue como um analista de compras. Analise os produtos abaixo e escolha o melhor custo-benefício.
+    Retorne APENAS um objeto JSON puro com os campos: "nome", "preco", "link" e "motivo".
     
     Lista: {lista_produtos}
     """
@@ -23,21 +22,19 @@ def analisar_melhor_opcao(lista_produtos):
         response = model.generate_content(prompt)
         texto = response.text
         
-        # Expressão regular para extrair apenas o conteúdo entre chaves { }
-        # Isso evita erros se a IA responder com ```json ou textos extras
+        # Tenta extrair o JSON se a IA mandar texto extra
         match = re.search(r'\{.*\}', texto, re.DOTALL)
         if match:
-            json_str = match.group()
-            return json.loads(json_str)
-        else:
-            # Caso a IA não retorne um JSON válido
-            return json.loads(texto.replace('```json', '').replace('```', '').strip())
+            return json.loads(match.group())
+        
+        return json.loads(texto.replace('```json', '').replace('```', '').strip())
             
     except Exception as e:
-        print(f"Erro detalhado no brain.py: {str(e)}")
+        print(f"Erro no Gemini: {str(e)}")
+        # Retorno de segurança para o seu HTML não exibir "Erro ao buscar"
         return {
-            "nome": "Erro na análise",
-            "preco": "0",
+            "nome": "Produto não analisado",
+            "preco": "Ver no site",
             "link": "#",
-            "motivo": f"Houve um problema técnico com a IA: {str(e)}"
+            "motivo": f"Erro na IA: {str(e)}"
         }
