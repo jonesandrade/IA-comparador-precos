@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Minha IA de Ofertas</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 50px; }
+        input { padding: 15px; width: 300px; border-radius: 5px; border: none; }
+        button { padding: 15px; background: #00ff88; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        #resultado { margin-top: 30px; display: flex; justify-content: center; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 10px; border: 1px solid #00ff88; width: 350px; }
+        a { color: #00ff88; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🔎 IA Comparadora de Preços</h1>
+    <input type="text" id="produto" placeholder="Ex: Cadeira Gamer">
+    <button onclick="buscar()">Ver Melhor Oferta</button>
+
+    <div id="resultado"></div>
+
+    <script>
+        async function buscar() {
+            const btn = document.querySelector('button');
+            const div = document.getElementById('resultado');
+            const produto = document.getElementById('produto').value;
+            
+            btn.innerText = "IA Analisando...";
+            div.innerHTML = "Buscando no Mercado Livre e avaliando com Gemini...";
+
+            try {
+                const response = await fetch(`/buscar?nome_produto=${produto}`);
+                const data = await response.json();
+                const res = data.resultado;
+
+                div.innerHTML = `
+                    <div class="card">
+                        <h2>${res.nome}</h2>
+                        <p style="font-size: 24px;">R$ ${res.preco}</p>
+                        <p><strong>Por que a IA escolheu:</strong> ${res.motivo}</p>
+                        <a href="${res.link}" target="_blank">IR PARA O SITE →</a>
+                    </div>
+                `;
+            } catch (err) {
+                div.innerHTML = "Erro ao buscar. Verifique os logs.";
+            }
+            btn.innerText = "Ver Melhor Oferta";
+        }
+    </script>
+</body>
+</html>
