@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-google-generativeai
-beautifulsoup4
-requests
-python-dotenv
