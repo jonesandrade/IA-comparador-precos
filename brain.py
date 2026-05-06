@@ -2,24 +2,28 @@ import google.generativeai as genai
 import os
 import json
 import re
+from google.generativeai.types import RequestOptions
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Forçamos a configuração básica
+# Configuração com RequestOptions para tentar contornar o erro de versão
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def analisar_melhor_opcao(lista_produtos):
-    # Usamos o 1.5-flash que é o mais compatível com contas gratuitas hoje
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Vamos tentar o modelo 'models/gemini-1.5-flash' (nome completo)
+    model = genai.GenerativeModel('models/gemini-1.5-flash')
     
-    prompt = f"Analise estes produtos e retorne APENAS um JSON com nome, preco, link e motivo: {lista_produtos}"
+    prompt = f"Analise e retorne apenas um JSON com os campos nome, preco, link e motivo: {lista_produtos}"
     
     try:
-        # Adicionamos um safety_settings simples para evitar bloqueios bobos
-        response = model.generate_content(prompt)
-        texto = response.text
+        # RequestOptions pode ajudar se o problema for a rota da API no servidor
+        response = model.generate_content(
+            prompt,
+            request_options=RequestOptions(api_version='v1')
+        )
         
+        texto = response.text
         match = re.search(r'\{.*\}', texto, re.DOTALL)
         if match:
             return json.loads(match.group())
@@ -29,8 +33,8 @@ def analisar_melhor_opcao(lista_produtos):
     except Exception as e:
         print(f"Erro no Gemini: {str(e)}")
         return {
-            "nome": "Erro de Conexão",
+            "nome": "Erro de Modelo",
             "preco": "---",
             "link": "#",
-            "motivo": f"A API do Google retornou: {str(e)}. Verifique se a sua chave API é do 'Google AI Studio'."
+            "motivo": f"O modelo não foi encontrado (404). Erro: {str(e)}"
         }
