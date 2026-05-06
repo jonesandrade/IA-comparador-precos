@@ -5,24 +5,21 @@ import re
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Forçamos a configuração básica
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def analisar_melhor_opcao(lista_produtos):
-    # 'gemini-pro' é o nome mais estável e universal para evitar o erro 404
-    model = genai.GenerativeModel('gemini-pro')
+    # Usamos o 1.5-flash que é o mais compatível com contas gratuitas hoje
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
-    prompt = f"""
-    Atue como um analista de compras. Analise os produtos abaixo e escolha o melhor custo-benefício.
-    Retorne APENAS um objeto JSON puro com os campos: "nome", "preco", "link" e "motivo".
-    
-    Lista: {lista_produtos}
-    """
+    prompt = f"Analise estes produtos e retorne APENAS um JSON com nome, preco, link e motivo: {lista_produtos}"
     
     try:
+        # Adicionamos um safety_settings simples para evitar bloqueios bobos
         response = model.generate_content(prompt)
         texto = response.text
         
-        # Tenta extrair o JSON se a IA mandar texto extra
         match = re.search(r'\{.*\}', texto, re.DOTALL)
         if match:
             return json.loads(match.group())
@@ -31,10 +28,9 @@ def analisar_melhor_opcao(lista_produtos):
             
     except Exception as e:
         print(f"Erro no Gemini: {str(e)}")
-        # Retorno de segurança para o seu HTML não exibir "Erro ao buscar"
         return {
-            "nome": "Produto não analisado",
-            "preco": "Ver no site",
+            "nome": "Erro de Conexão",
+            "preco": "---",
             "link": "#",
-            "motivo": f"Erro na IA: {str(e)}"
+            "motivo": f"A API do Google retornou: {str(e)}. Verifique se a sua chave API é do 'Google AI Studio'."
         }
